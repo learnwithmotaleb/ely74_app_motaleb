@@ -7,6 +7,9 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+
+
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -19,7 +22,7 @@ plugins {
 android {
     namespace = "com.bazarya.android.app"
     compileSdk = 36
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -57,25 +60,23 @@ android {
     }*/
     signingConfigs {
         create("release") {
-            // Use 'getProperty' to avoid crashes if keys are missing
-            keyAlias = keystoreProperties.getProperty("keyAlias")
-            keyPassword = keystoreProperties.getProperty("keyPassword")
-            val keystorePath = keystoreProperties.getProperty("storeFile")
-            storeFile = if (keystorePath != null) file(keystorePath) else null
-            storePassword = keystoreProperties.getProperty("storePassword")
+            keyAlias = keystoreProperties["keyAlias"]?.toString() ?: ""
+            keyPassword = keystoreProperties["keyPassword"]?.toString() ?: ""
+            storePassword = keystoreProperties["storePassword"]?.toString() ?: ""
+            storeFile = file(keystoreProperties["storeFile"]?.toString() ?: "")
         }
     }
 
+
     buildTypes {
         getByName("release") {
-            // ... your existing config
+            isMinifyEnabled = false
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")
-        }
-        getByName("debug") {
-            // Explicitly use the default debug keys to avoid signing errors
-            signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
 }
 
 flutter {
