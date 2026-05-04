@@ -222,9 +222,12 @@ class _ChattingPageState extends State<ChattingPage> {
                               child: Row(
                                 children: [
                                   Icon(Icons.mic, color: AppColors.kPrimaryColor),
-                                  space8W,
-                                  Text("Voice Message Ready"),
-                                  Spacer(),
+                                  Expanded(
+                                    child: VoiceMessagePlayer(
+                                      audioUrl: MessageController.to.voicePath.value,
+                                      isMe: true,
+                                    ),
+                                  ),
                                   IconButton(
                                     onPressed: () => MessageController.to.voicePath.value = "",
                                     icon: Icon(Icons.delete, color: Colors.red),
@@ -266,7 +269,7 @@ class _ChattingPageState extends State<ChattingPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             CustomNetworkImage(
-              imageUrl: "${ApiService().baseUrl}/${convoUser?.img}",
+              imageUrl: "${ApiService().baseUrl}/${convoUser?.img}".replaceAll("\\", "/"),
               height: 75.w,
               width: 75.w,
               boxShape: BoxShape.circle,
@@ -439,12 +442,17 @@ class _ChattingPageState extends State<ChattingPage> {
                     ),
             ),
             space8W,
-            if (MessageController.to.messageController.text.isEmpty && 
+            if (MessageController.to.messageText.value.trim().isEmpty && 
                 MessageController.to.img.isEmpty && 
                 MessageController.to.voicePath.isEmpty)
               GestureDetector(
-                onLongPress: () => MessageController.to.startRecording(),
-                onLongPressUp: () => MessageController.to.stopRecording(),
+                onTap: () {
+                  if (isRecording) {
+                    MessageController.to.stopRecording();
+                  } else {
+                    MessageController.to.startRecording();
+                  }
+                },
                 child: CircleAvatar(
                   backgroundColor: isRecording ? Colors.red : AppColors.kPrimaryColor,
                   child: Icon(isRecording ? Icons.stop : Icons.mic, color: Colors.white),

@@ -10,7 +10,8 @@ import '../utils/variable.dart';
 class ApiService {
   // Base URL for your API
   // final String baseUrl = 'http://10.0.60.189:5000';
-  final String baseUrl = 'http://3.138.222.235:5000';
+  // final String baseUrl = 'http://3.138.222.235:5000';
+  final String baseUrl = 'https://whxmt66k-5004.inc1.devtunnels.ms';
 
   // Singleton pattern for API service
   static final ApiService _instance = ApiService._internal();
@@ -125,9 +126,23 @@ result=true;            break;
 if(body!=null){
   logger.d(body);
 }
-      // Parse response
-      var responseData = json.decode(response.body);
-      // logger.d(responseData);
+      // Parse response safely
+      var responseData;
+      if (response.body.trim().isEmpty) {
+        responseData = {};
+      } else {
+        try {
+          responseData = json.decode(response.body);
+        } catch (e) {
+          logger.e("Failed to parse JSON. Status: ${response.statusCode}, Body: ${response.body}");
+          return {
+            'success': false,
+            'message': 'Server returned an invalid response',
+            'statusCode': response.statusCode,
+          };
+        }
+      }
+
       // Check status code
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return responseData;
@@ -184,15 +199,9 @@ if(body!=null){
       var value = files[key];
 
       if (value is File) {
-        var fileStream = http.ByteStream(value.openRead());
-        var length = await value.length();
-        var fileName = value.path.split('/').last;
-
-        var multipartFile = http.MultipartFile(
+        var multipartFile = await http.MultipartFile.fromPath(
           key,
-          fileStream,
-          length,
-          filename: fileName,
+          value.path,
           contentType: _getMediaType(value.path),
         );
         request.files.add(multipartFile);
@@ -200,15 +209,9 @@ if(body!=null){
       else if (value is List) {
         for (var file in value) {
           if (file is File) {
-            var fileStream = http.ByteStream(file.openRead());
-            var length = await file.length();
-            var fileName = file.path.split('/').last;
-
-            var multipartFile = http.MultipartFile(
+            var multipartFile = await http.MultipartFile.fromPath(
               key,
-              fileStream,
-              length,
-              filename: fileName,
+              file.path,
               contentType: _getMediaType(file.path),
             );
             request.files.add(multipartFile);
@@ -230,7 +233,22 @@ if(body!=null){
     try {
       var response = await request.send();
       var responseData = await response.stream.bytesToString();
-      var jsonResponse = json.decode(responseData);
+      
+      var jsonResponse;
+      if (responseData.trim().isEmpty) {
+        jsonResponse = {};
+      } else {
+        try {
+          jsonResponse = json.decode(responseData);
+        } catch (e) {
+          logger.e("Failed to parse JSON in multipart request. Status: ${response.statusCode}, Body: $responseData");
+          return {
+            'success': false,
+            'message': 'Server returned an invalid response',
+            'statusCode': response.statusCode,
+          };
+        }
+      }
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return jsonResponse;
@@ -269,8 +287,9 @@ if(body!=null){
         return MediaType('application', 'msword');
       case 'docx':
         return MediaType('application', 'vnd.openxmlformats-officedocument.wordprocessingml.document');
-      case 'mp3':
       case 'm4a':
+        return MediaType('audio', 'mp4');
+      case 'mp3':
         return MediaType('audio', 'mpeg');
       case 'wav':
         return MediaType('audio', 'wav');

@@ -22,13 +22,14 @@ class CustomAuthAppbar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      // centerTitle: true,
-      // title: CustomText(
-      //   text: title,
-      //   style: poppinsMedium,
-      //   fontSize: getFontSizeExtraLarge(),
-      //   color: AppColors.kPrimaryTextDarkColor,
-      // ),
+      automaticallyImplyLeading: true,
+      leading: ButtonTapWidget(
+        shape: CircleBorder(),
+        onTap: () {
+          Get.back();
+        },
+        child: Padding(padding: padding8, child: SvgPicture.asset(backIcon)),
+      ),
     );
   }
 
@@ -61,13 +62,14 @@ class CustomDefaultAppbar extends StatelessWidget
       // backgroundColor: AppColors.kPrimaryColor,
       // foregroundColor: AppColors.kWhiteColor,
       centerTitle: true,
-      leading: ButtonTapWidget(
-        shape: CircleBorder(),
-        onTap: onLeading ?? () {
-          Get.back();
-        },
-        child: Padding(padding: padding8, child: SvgPicture.asset(backIcon)),
-      ),
+      leading: leading ??
+          ButtonTapWidget(
+            shape: CircleBorder(),
+            onTap: onLeading ?? () {
+              Get.back();
+            },
+            child: Padding(padding: padding8, child: SvgPicture.asset(backIcon)),
+          ),
       actions: action,
       title:
       titleWidget ??

@@ -81,23 +81,23 @@ class SignUpPage extends StatelessWidget {
                     isRequired: true,
                     title: AppStaticStrings.email.tr,
                   ),
-                  // CustomTextField(
-                  //   textEditingController:
-                  //       AuthController.to.phoneSignUpController,
-                  //   fillColor: Colors.transparent,
-                  //   isRequired: true,
-                  //   validator: (value) {
-                  //     if (value == null || value.isEmpty) {
-                  //       return AppStaticStrings.phoneRequired.tr;
-                  //     } else if (value.length < 8) {
-                  //       return AppStaticStrings.phoneMustbe11.tr;
-                  //     }
-                  //
-                  //     return null;
-                  //   },
-                  //   title: AppStaticStrings.phoneNumber.tr,
-                  //   keyboardType: TextInputType.number,
-                  // ),
+                  CustomTextField(
+                    textEditingController:
+                        AuthController.to.phoneSignUpController,
+                    fillColor: Colors.transparent,
+                    isRequired: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return AppStaticStrings.phoneRequired.tr;
+                      } else if (value.length < 8) {
+                        return AppStaticStrings.phoneMustbe11.tr;
+                      }
+
+                      return null;
+                    },
+                    title: AppStaticStrings.phoneNumber.tr,
+                    keyboardType: TextInputType.number,
+                  ),
 
                   CustomTextField(
                     textEditingController:

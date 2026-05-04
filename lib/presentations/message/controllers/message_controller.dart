@@ -40,6 +40,7 @@ class MessageController extends GetxController {
   Rx<Users> receiverUser = Users().obs;
   Rx<ChattingUserModel> chattingUser = ChattingUserModel().obs;
   TextEditingController messageController = TextEditingController();
+  RxString messageText = "".obs;
   IO.Socket? socket;
 
   // Voice recording variables
@@ -64,6 +65,9 @@ class MessageController extends GetxController {
   @override
   void onInit() async {
     super.onInit();
+    messageController.addListener(() {
+      messageText.value = messageController.text;
+    });
     audioRecorder = AudioRecorder();
     await AccountInformationController.to.getUserProfileRequest();
     if (AccountInformationController.to.userModel.value.sId != null &&
@@ -187,8 +191,12 @@ class MessageController extends GetxController {
           itemsPerPage.value = response['pagination']['itemsPerPage'] ?? 10;
         }
         final newCategories = (response['data'] as List).map((e) => ConversationModel.fromJson(e)).toList();
-        final imageUrls = newCategories.map((cat) => "${ApiService().baseUrl}/${cat.users!.first.img}").where((url) => url.isNotEmpty).toList();
-        final imageUrls1 = newCategories.map((cat) => "${ApiService().baseUrl}/${cat.users!.last.img}").where((url) => url.isNotEmpty).toList();
+        final imageUrls = newCategories
+            .map((cat) => cat.users?.first.img != null ? "${ApiService().baseUrl}/${cat.users!.first.img}".replaceAll("\\", "/") : "")
+            .where((url) => url.isNotEmpty).toList();
+        final imageUrls1 = newCategories
+            .map((cat) => cat.users?.last.img != null ? "${ApiService().baseUrl}/${cat.users!.last.img}".replaceAll("\\", "/") : "")
+            .where((url) => url.isNotEmpty).toList();
 
         preloadImagesFromUrls(imageUrls);
         preloadImagesFromUrls(imageUrls1);
@@ -264,7 +272,7 @@ class MessageController extends GetxController {
         );
         final imageUrls2 =
             chattingUser.value.users!
-                .map((cat) => "${ApiService().baseUrl}/${cat.img}")
+                .map((cat) => cat.img != null ? "${ApiService().baseUrl}/${cat.img}".replaceAll("\\", "/") : "")
                 .where((url) => url.isNotEmpty)
                 .toList();
         final newMessages =
@@ -273,7 +281,7 @@ class MessageController extends GetxController {
                 .toList();
         final imageUrls =
             newMessages
-                .map((cat) => "${ApiService().baseUrl}/${cat.img}")
+                .map((cat) => cat.img != null ? "${ApiService().baseUrl}/${cat.img}".replaceAll("\\", "/") : "")
                 .where((url) => url.isNotEmpty)
                 .toList();
         preloadImagesFromUrls(imageUrls);
@@ -382,9 +390,7 @@ class MessageController extends GetxController {
         'conversation_id': conversationId,
       };
       
-      if (messageController.text.isNotEmpty) {
-        fields['message'] = messageController.text;
-      }
+      fields['message'] = messageController.text;
       
       Map<String, dynamic> files = {};
 
@@ -393,8 +399,14 @@ class MessageController extends GetxController {
       }
       
       if (voicePath.value.isNotEmpty) {
-        files['voice_message'] = File(voicePath.value);
+        String path = voicePath.value;
+        if (path.startsWith('file://')) {
+          path = path.replaceFirst('file://', '');
+        }
+        files['voice_message'] = File(path);
       }
+
+      logger.d("Creating message with fields: $fields and files: ${files.keys.toList()}");
 
       final response = await ApiService().multipartRequest(
         endpoint: messageCreateEndPoint,
@@ -403,17 +415,16 @@ class MessageController extends GetxController {
         files: files,
       );
 
-      messageController.clear();
-      img.value = "";
-      voicePath.value = "";
       isLoadingCreateMessage.value = false;
 
       if (response['success'] == true) {
-        logger.d(response);
+        logger.d("Message created successfully: $response");
+        messageController.clear();
+        img.value = "";
+        voicePath.value = "";
         getMessageListRequest(conversationId: conversationId);
-        // showCustomSnackbar(title: 'Success', message: response['message']);
       } else {
-        logger.e(response);
+        logger.e("Failed to create message: $response");
         if (kDebugMode) {
           showCustomSnackbar(
             title: 'Failed',
@@ -423,7 +434,7 @@ class MessageController extends GetxController {
         }
       }
     } catch (e) {
-      logger.e(e.toString());
+      logger.e("Exception in createMessageRequest: $e");
       isLoadingCreateMessage.value = false;
     } finally {
       isLoadingCreateMessage.value = false;

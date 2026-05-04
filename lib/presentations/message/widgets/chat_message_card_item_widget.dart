@@ -34,7 +34,7 @@ class ChatMessageCardItemWidget extends StatelessWidget {
         children: [
           if (!isMe)
             CustomNetworkImage(
-              imageUrl: "${ApiService().baseUrl}/${receiverUser.img}",
+              imageUrl: "${ApiService().baseUrl}/${receiverUser.img}".replaceAll("\\", "/"),
               height: 40.w,
               boxShape: BoxShape.circle,
               width: 40.w,
@@ -85,7 +85,7 @@ class ChatMessageCardItemWidget extends StatelessWidget {
                                   child: Stack(
                                     children: [
                                       CustomNetworkImage(
-                                        imageUrl: "${ApiService().baseUrl}/${message.img}",
+                                        imageUrl: "${ApiService().baseUrl}/${message.img}".replaceAll("\\", "/"),
                                       ),
                                       Positioned(
                                         right: 10,
@@ -105,11 +105,11 @@ class ChatMessageCardItemWidget extends StatelessWidget {
                             },
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8.r),
-                              child: CustomNetworkImage(
-                                height: 150.h,
-                                width: 150.w,
-                                imageUrl: "${ApiService().baseUrl}/${message.img}",
-                              ),
+                                child: CustomNetworkImage(
+                                  height: 150.h,
+                                  width: 150.w,
+                                  imageUrl: "${ApiService().baseUrl}/${message.img}".replaceAll("\\", "/"),
+                                ),
                             ),
                           ),
                         ),
@@ -119,7 +119,7 @@ class ChatMessageCardItemWidget extends StatelessWidget {
                         Padding(
                           padding: EdgeInsets.only(top: 8.h),
                           child: VoiceMessagePlayer(
-                            audioUrl: "${ApiService().baseUrl}/${message.voiceMessage}",
+                            audioUrl: "${ApiService().baseUrl}/${message.voiceMessage}".replaceAll("\\", "/"),
                             isMe: isMe,
                           ),
                         ),
@@ -145,7 +145,7 @@ class ChatMessageCardItemWidget extends StatelessWidget {
 
           if (isMe)
             CustomNetworkImage(
-              imageUrl: "${ApiService().baseUrl}/${AccountInformationController.to.userModel.value.img}",
+              imageUrl: "${ApiService().baseUrl}/${AccountInformationController.to.userModel.value.img}".replaceAll("\\", "/"),
               height: 40.w,
               boxShape: BoxShape.circle,
               width: 40.w,
@@ -169,6 +169,7 @@ class VoiceMessagePlayer extends StatefulWidget {
 class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   late AudioPlayer _audioPlayer;
   bool _isPlaying = false;
+  bool _isLoading = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
@@ -210,10 +211,32 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   }
 
   void _togglePlay() async {
-    if (_isPlaying) {
-      await _audioPlayer.pause();
-    } else {
-      await _audioPlayer.play(UrlSource(widget.audioUrl));
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+      } else {
+        setState(() => _isLoading = true);
+        Source source;
+        String path = widget.audioUrl;
+        if (path.startsWith('http')) {
+          source = UrlSource(path);
+        } else {
+          if (path.startsWith('file://')) {
+            path = path.replaceFirst('file://', '');
+          }
+          source = DeviceFileSource(path);
+        }
+
+        if (_position > Duration.zero && _position < _duration) {
+          await _audioPlayer.resume();
+        } else {
+          await _audioPlayer.play(source);
+        }
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      debugPrint("Error playing audio: $e");
     }
   }
 
@@ -231,23 +254,32 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
       padding: EdgeInsets.all(4.w),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(
-              _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-              color: AppColors.kPrimaryColor,
-              size: 32.sp,
-            ),
-            onPressed: _togglePlay,
-            padding: EdgeInsets.zero,
-            constraints: BoxConstraints(),
-          ),
+          _isLoading 
+            ? SizedBox(
+                width: 32.sp,
+                height: 32.sp,
+                child: Padding(
+                  padding: EdgeInsets.all(8.w),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.kPrimaryColor),
+                ),
+              )
+            : IconButton(
+                icon: Icon(
+                  _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                  color: AppColors.kPrimaryColor,
+                  size: 32.sp,
+                ),
+                onPressed: _togglePlay,
+                padding: EdgeInsets.zero,
+                constraints: BoxConstraints(),
+              ),
           Expanded(
             child: Column(
               children: [
                 Slider(
                   min: 0,
-                  max: _duration.inMilliseconds.toDouble(),
-                  value: _position.inMilliseconds.toDouble().clamp(0, _duration.inMilliseconds.toDouble()),
+                  max: _duration.inMilliseconds > 0 ? _duration.inMilliseconds.toDouble() : 1.0,
+                  value: _position.inMilliseconds.toDouble().clamp(0, _duration.inMilliseconds > 0 ? _duration.inMilliseconds.toDouble() : 1.0),
                   activeColor: AppColors.kPrimaryColor,
                   inactiveColor: AppColors.kPrimaryColor.withOpacity(0.3),
                   onChanged: (value) async {

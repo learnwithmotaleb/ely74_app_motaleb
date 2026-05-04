@@ -55,7 +55,7 @@ class MessageCardItemWidget extends StatelessWidget {
             spacing: 12.w,
             children: [
               CustomNetworkImage(
-                imageUrl: "${ApiService().baseUrl}/${receiverUser.img}",
+                imageUrl: "${ApiService().baseUrl}/${receiverUser.img}".replaceAll("\\", "/"),
                 boxShape: BoxShape.circle,
                 height: 50.w,
                 width: 50.w,

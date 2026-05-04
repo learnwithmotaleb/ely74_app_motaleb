@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:market_place/core/services/firebase_notification_service.dart';
 import 'package:market_place/presentations/auth/views/verify_otp_page.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -65,7 +66,7 @@ class AuthController extends GetxController {
         body: {
           "name": nameSignUpController.text,
           "email": emailSignUpController.value.text,
-          "phone": "000000000000",
+          "phone": phoneSignUpController.text,
           "password": passSignUpController.text,
           "confirm_password": confirmPassSignUpController.text,
         },
@@ -152,6 +153,14 @@ class AuthController extends GetxController {
 
   ///------------------------------ sign in method -------------------------///
   Future<void> signInRequest() async {
+    String? fcmToken = await FirebaseNotificationService().getFCMToken();
+    String deviceType = GetPlatform.isAndroid ? "android" : "ios";
+
+    print("===================================");
+    print("FCM Token: $fcmToken");
+    print("Device Type: $deviceType");
+    print("===================================");
+
     try {
       loadingProcess.value = AuthProcess.login;
 
@@ -160,13 +169,15 @@ class AuthController extends GetxController {
         method: 'POST',
         useAuth: false,
         body: {
-          "email": AuthController.to.emailLoginController.text,
+          "login": AuthController.to.emailLoginController.text,
           "password": AuthController.to.passLoginController.text,
+          "fcmToken": fcmToken,
+          "deviceType": deviceType,
         },
       );
 
       loadingProcess.value = AuthProcess.none;
-logger.d(response);
+      logger.d(response);
 
       if (response['success'] == true) {
         logger.d(response);
@@ -179,9 +190,11 @@ logger.d(response);
         }
         showCustomSnackbar(title: 'Success', message: response['message']);
         Boxes.getUserData().put(tokenKey, response['token']);
-        Map<String, dynamic> decodedToken = JwtDecoder.decode(response['token']);
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(
+          response['token'],
+        );
         ApiService().setAuthToken(Boxes.getUserData().get(tokenKey).toString());
-      await Purchases.logIn(decodedToken["id"]);
+        await Purchases.logIn(decodedToken["id"]);
         Get.offAllNamed(NavigationPage.routeName);
       } else {
         logger.e(response);
@@ -296,21 +309,18 @@ logger.d(response);
 
   reinitializeSignUpControllers() {
     if (kDebugMode) {
-      emailSignUpController.value.text = 'vaxag42656@bamsrad.com';
-      nameSignUpController.text = 'vaxag42656';
-      phoneSignUpController.text = '01566026603';
-      passSignUpController.text = '12345aA*';
-      confirmPassSignUpController.text = '12345aA*';
-      ///test  subscribed acc
-      // emailLoginController.text = 'kimij58616@namestal.com';
-      ///test expired subscription acc
-     // emailLoginController.text = 'bifilig760@skateru.com';
-       emailLoginController.text = 'seloce4741@lhory.com';
-      passLoginController.text = '12345aA*';
+      emailSignUpController.value.text = '';
+      nameSignUpController.text = '';
+      phoneSignUpController.text = '';
+      passSignUpController.text = '';
+      confirmPassSignUpController.text = '';
 
-      emailForgetController.value.text = 'seloce4741@lhory.com';
-      passNewController.text = '12345aA*';
-      confirmPassNewController.text = '12345aA*';
+      emailLoginController.text = '';
+      passLoginController.text = '';
+
+      emailForgetController.value.text = '';
+      passNewController.text = '';
+      confirmPassNewController.text = '';
     }
   }
 

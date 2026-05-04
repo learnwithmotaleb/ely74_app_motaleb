@@ -427,15 +427,27 @@ class AccountInformationController extends GetxController {
       );
       isLoadingLogout.value = false;
       if (response['success'] == true) {
-        await Purchases.logOut();
         logger.d(response);
         showCustomSnackbar(title: 'Success', message: response['message']);
+        
         Boxes.getUserData().delete(tokenKey);
         Boxes.getAppBox().delete("shownFreeTrialPopup");
-        NavigationController.to.isLoggedIn;
+        
+        try {
+          await Purchases.logOut();
+        } catch (e) {
+          logger.e("Purchases logOut error: $e");
+        }
+        
+        if (Get.isDialogOpen ?? false) {
+          Get.back(); // Close the logout confirmation dialog
+        }
         Get.offAllNamed(LoginPage.routeName);
       } else {
         logger.e(response);
+        if (Get.isDialogOpen ?? false) {
+          Get.back(); // Close the dialog so user isn't stuck
+        }
         if(kDebugMode){
           showCustomSnackbar(
             title: 'Failed',
@@ -445,6 +457,10 @@ class AccountInformationController extends GetxController {
         }
       }
     } catch (e) {
+      isLoadingLogout.value = false;
+      if (Get.isDialogOpen ?? false) {
+        Get.back(); // Close the dialog
+      }
       logger.e(e.toString());
     }
   }

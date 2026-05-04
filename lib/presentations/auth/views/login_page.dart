@@ -51,13 +51,22 @@ class LoginPage extends StatelessWidget {
                   space12H,
                   CustomTextField(
                     fillColor: Colors.transparent,
-                    title: AppStaticStrings.email.tr,
+                    title: "Email Or Phone".tr,
+                    hintText: "email or phone",
                     textEditingController: AuthController.to.emailLoginController,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return AppStaticStrings.emailRequired.tr;
-                      } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                        return AppStaticStrings.enterValidEmail.tr;
+                        return "Email or Phone is required".tr;
+                      }
+                      // If it contains '@', validate as email, otherwise as phone
+                      if (value.contains('@')) {
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                          return AppStaticStrings.enterValidEmail.tr;
+                        }
+                      } else {
+                        if (value.length < 6) {
+                          return "Enter a valid phone number".tr;
+                        }
                       }
                       return null;
                     },
@@ -65,6 +74,7 @@ class LoginPage extends StatelessWidget {
                   CustomTextField(
                     fillColor: Colors.transparent,
                     title: AppStaticStrings.password.tr,
+                    hintText: "password",
                     textEditingController:
                         AuthController.to.passLoginController,
                     validator: (value) {

@@ -590,24 +590,28 @@ void showCustomSnackbar({
       break;
     // TODO: Handle this case.
   }
-  Get.snackbar(
-    title,
-    message,
-    backgroundColor: backgroundColor,
-    padding: const EdgeInsets.all(12),
-    margin: const EdgeInsets.all(12),
-    colorText: textColor,
-    dismissDirection: DismissDirection.horizontal,
-    snackPosition: position,
-    duration: const Duration(seconds: 3),
-    mainButton:
-        noInternet == true
-            ? TextButton(
-              onPressed: retryTap ?? () {},
-              child: CustomText(text: 'Retry', color: AppColors.kWhiteColor),
-            )
-            : null,
-  );
+  Future.microtask(() {
+    if (Get.context != null) {
+      Get.snackbar(
+        title,
+        message,
+        backgroundColor: backgroundColor,
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.all(12),
+        colorText: textColor,
+        dismissDirection: DismissDirection.horizontal,
+        snackPosition: position,
+        duration: const Duration(seconds: 3),
+        mainButton:
+            noInternet == true
+                ? TextButton(
+                  onPressed: retryTap ?? () {},
+                  child: CustomText(text: 'Retry', color: AppColors.kWhiteColor),
+                )
+                : null,
+      );
+    }
+  });
 }
 
 Future<String> selectDate(BuildContext context) async {
