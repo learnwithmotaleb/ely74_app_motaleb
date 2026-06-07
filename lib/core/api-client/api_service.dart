@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -8,23 +9,18 @@ import 'package:internet_connection_checker_plus/internet_connection_checker_plu
 import '../utils/variable.dart';
 
 class ApiService {
-  // Base URL for your API
-  // final String baseUrl = 'http://10.0.60.189:5000';
+  // Base URL for API. Supports --dart-define=API_BASE_URL=...
+  final String baseUrl = _resolveBaseUrl();
+  static const Duration _requestTimeout = Duration(seconds: 30);
   // final String baseUrl = 'http://3.138.222.235:5000';
-  final String baseUrl = 'https://whxmt66k-5004.inc1.devtunnels.ms';
+  // final String baseUrl = 'https://whxmt66k-5004.inc1.devtunnels.ms';
+  //final String baseUrl = 'http://10.10.20.9:8004';
+  // final String baseUrl = 'http://10.10.20.9:8004';
 
   // Singleton pattern for API service
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
-
-  // Headers that will be used in all requests
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        // Add auth token if available
-        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-      };
 
   // Auth token storage
   String? _authToken;
@@ -42,17 +38,7 @@ class ApiService {
   // Check internet connectivity
   Future<bool> checkInternetConnection() async {
     try {
-      bool result = await InternetConnection().hasInternetAccess;
-      InternetConnection().onStatusChange.listen((InternetStatus status) {
-        switch (status) {
-          case InternetStatus.connected:
-result=true;            break;
-          case InternetStatus.disconnected:
-            result=false;             break;
-        }
-      });
-      // logger.d(result);
-      return true;
+      return await InternetConnection().hasInternetAccess;
     } catch (e) {
       debugPrint('Connection check error: $e');
       return false;
@@ -75,12 +61,7 @@ result=true;            break;
       };
     }
 
-    // Build the URL with query parameters if provided
-    var uri = Uri.parse('$baseUrl/$endpoint');
-    if (queryParams != null && queryParams.isNotEmpty) {
-      uri = uri.replace(queryParameters: queryParams);
-    }
-// logger.d(uri.toString());
+    final uri = _buildUri(endpoint: endpoint, queryParams: queryParams);
     http.Response response;
     final headers = {
       'Content-Type': 'application/json',
@@ -90,35 +71,45 @@ result=true;            break;
     try {
       switch (method) {
         case 'GET':
-          response = await http.get(uri, headers: headers);
+          response = await http
+              .get(uri, headers: headers)
+              .timeout(_requestTimeout);
           break;
         case 'POST':
-          response = await http.post(
-            uri,
-            headers: headers,
-            body: body != null ? json.encode(body) : null,
-          );
+          response = await http
+              .post(
+                uri,
+                headers: headers,
+                body: body != null ? json.encode(body) : null,
+              )
+              .timeout(_requestTimeout);
           break;
         case 'PUT':
-          response = await http.put(
-            uri,
-            headers: headers,
-            body: body != null ? json.encode(body) : null,
-          );
+          response = await http
+              .put(
+                uri,
+                headers: headers,
+                body: body != null ? json.encode(body) : null,
+              )
+              .timeout(_requestTimeout);
           break;
         case 'PATCH':
-          response = await http.patch(
-            uri,
-            headers: headers,
-            body: body != null ? json.encode(body) : null,
-          );
+          response = await http
+              .patch(
+                uri,
+                headers: headers,
+                body: body != null ? json.encode(body) : null,
+              )
+              .timeout(_requestTimeout);
           break;
         case 'DELETE':
-          response = await http.delete(
-            uri,
-            headers: headers,
-            body: body != null ? json.encode(body) : null,
-          );
+          response = await http
+              .delete(
+                uri,
+                headers: headers,
+                body: body != null ? json.encode(body) : null,
+              )
+              .timeout(_requestTimeout);
           break;
         default:
           throw Exception('Unsupported HTTP method: $method');
@@ -155,6 +146,11 @@ if(body!=null){
           'data': responseData,
         };
       }
+    } on TimeoutException {
+      return {
+        'success': false,
+        'message': 'Request timeout. Please try again.',
+      };
     } catch (e) {
       return {
         'success': false,
@@ -180,7 +176,7 @@ if(body!=null){
       };
     }
 
-    var uri = Uri.parse('$baseUrl/$endpoint');
+    final uri = _buildUri(endpoint: endpoint);
     var request = http.MultipartRequest(method, uri);
 
     // Add headers (including auth token if available)
@@ -231,7 +227,7 @@ if(body!=null){
     }
 
     try {
-      var response = await request.send();
+      var response = await request.send().timeout(_requestTimeout);
       var responseData = await response.stream.bytesToString();
       
       var jsonResponse;
@@ -260,6 +256,11 @@ if(body!=null){
           'data': jsonResponse,
         };
       }
+    } on TimeoutException {
+      return {
+        'success': false,
+        'message': 'Request timeout. Please try again.',
+      };
     } catch (e) {
       return {
         'success': false,
@@ -296,5 +297,26 @@ if(body!=null){
       default:
         return MediaType('application', 'octet-stream'); // Default binary data
     }
+  }
+
+  Uri _buildUri({
+    required String endpoint,
+    Map<String, String>? queryParams,
+  }) {
+    final cleanBase = baseUrl.replaceAll(RegExp(r'/+$'), '');
+    final cleanEndpoint = endpoint.replaceAll(RegExp(r'^/+'), '');
+    var uri = Uri.parse('$cleanBase/$cleanEndpoint');
+    if (queryParams != null && queryParams.isNotEmpty) {
+      uri = uri.replace(queryParameters: queryParams);
+    }
+    return uri;
+  }
+
+  static String _resolveBaseUrl() {
+    const fromDefine = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'http://10.10.20.9:8004',
+    );
+    return fromDefine.replaceAll(RegExp(r'/+$'), '');
   }
 }
