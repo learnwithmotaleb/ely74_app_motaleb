@@ -15,10 +15,22 @@ import '../widgets/category_card_item_widget.dart';
 import '../widgets/product_card_item_widget.dart';
 import '../widgets/view_all_row_widget.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   static const String routeName = "/home";
 
-  const HomePage({super.key});
+  const HomePage({Key? key}) : super(key: key);
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Trigger home data load when the page is first built
+    HomeController.to.getProductListForHomeRequest();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,90 +41,85 @@ class HomePage extends StatelessWidget {
       child: Stack(
         children: [
           CustomScrollView(
-            physics: AlwaysScrollableScrollPhysics(),
-           slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: padding12,
-                child: Column(
-                  spacing: 8.h,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Get.toNamed(SearchPage.routeName);
-                      },
-                      child: CustomTextField(
-                        isEnable: false,
-                        prefixIcon: Icon(
-                          CupertinoIcons.search,
-                          color: Colors.black,
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: padding12,
+                  child: Column(
+                    spacing: 8.h,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          Get.toNamed(SearchPage.routeName);
+                        },
+                        child: const CustomTextField(
+                          isEnable: false,
+                          prefixIcon: Icon(
+                            CupertinoIcons.search,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
-                    ),
-                    Obx(() {
-                      final isLoading = HomeController.to.isLoadingCategory.value;
-                      final categoryList = HomeController.to.catListWithPagination;
+                      Obx(() {
+                        final isLoading = HomeController.to.isLoadingCategory.value;
+                        final categoryList = HomeController.to.catListWithPagination;
 
-                      if (isLoading) {
-                        return CategoryCircleLoading();
-                      }
+                        if (isLoading) {
+                          return const CategoryCircleLoading();
+                        } else if (categoryList.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
 
-                      else if (categoryList.isEmpty) {
-                        return SizedBox.shrink();
-                      }
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ViewAllRow(
-                            title: AppStaticStrings.productCategories.tr,
-                            onPressed: () {
-                              Get.toNamed(CategoryPage.routeName);
-                            },
-                          ),
-                          SizedBox(height: 12.h),
-                          Wrap(
-                            alignment: WrapAlignment.spaceBetween,
-                            spacing: 8.w,
-                            runSpacing: 8.w,
-                            children: List.generate(
-                              categoryList.length > 8 ? 8 : categoryList.length,
-                                  (index) => CategoryCardItemWidget(
-                                categoryModel: categoryList[index],
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ViewAllRow(
+                              title: AppStaticStrings.productCategories.tr,
+                              onPressed: () {
+                                Get.toNamed(CategoryPage.routeName);
+                              },
+                            ),
+                            SizedBox(height: 12.h),
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              spacing: 8.w,
+                              runSpacing: 8.w,
+                              children: List.generate(
+                                categoryList.length > 8 ? 8 : categoryList.length,
+                                (index) => CategoryCardItemWidget(
+                                  categoryModel: categoryList[index],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      );
-                    }),
-
-                    ViewAllRow(
-                      title: AppStaticStrings.recentlyAdded.tr,
-                      onPressed: () {
-                        Get.toNamed(SearchPage.routeName);
-                      },
-                    ),
-                    Obx(() {
-                      return ProductGridWidget(
-                        length:
-                        HomeController.to.productListForHome.length > 4
-                            ? 4
-                            : HomeController.to.productListForHome.length,
-                        productList: HomeController.to.productListForHome,
-                        isLoading: HomeController.to.isLoadingHomeProduct.value,
-                      );
-                    }),
-                  ],
+                          ],
+                        );
+                      }),
+                      ViewAllRow(
+                        title: AppStaticStrings.recentlyAdded.tr,
+                        onPressed: () {
+                          Get.toNamed(SearchPage.routeName);
+                        },
+                      ),
+                      Obx(() {
+                        return ProductGridWidget(
+                          length: HomeController.to.productListForHome.length > 4
+                              ? 4
+                              : HomeController.to.productListForHome.length,
+                          productList: HomeController.to.productListForHome,
+                          isLoading: HomeController.to.isLoadingHomeProduct.value,
+                        );
+                      }),
+                    ],
+                  ),
                 ),
               ),
-            )
-           ] ,
+            ],
           ),
           Obx(
-            () =>
-                HomeController.to.isLoadingFilterCategory.value
-                    ? buildLoadingOverlay()
-                    : SizedBox.shrink(),
+            () => HomeController.to.isLoadingFilterCategory.value
+                ? buildLoadingOverlay()
+                : const SizedBox.shrink(),
           ),
         ],
       ),
