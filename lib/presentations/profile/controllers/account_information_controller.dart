@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:market_place/core/services/firebase_notification_service.dart';
 import 'package:market_place/presentations/auth/views/login_page.dart';
 import 'package:market_place/presentations/navigation/controller/navigation_controller.dart';
 import 'package:market_place/presentations/profile/model/profile_model.dart';
@@ -419,10 +420,17 @@ class AccountInformationController extends GetxController {
   ///------------------------------ log out method -------------------------///
 
   Future<void> logoutRequest() async {
+
+    String? fcmToken = await FirebaseNotificationService().getFCMToken();
+    String deviceType = GetPlatform.isAndroid ? "android" : "ios";
     try {
       isLoadingLogout.value = true;
       final response = await ApiService().request(
         endpoint: logoutEndPoint,
+        body: {
+          "fcmToken": fcmToken,
+          "deviceType": deviceType
+        },
         method: 'POST',
       );
       isLoadingLogout.value = false;

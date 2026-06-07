@@ -25,16 +25,17 @@ class _SearchPageState extends State<SearchPage> {
   final ScrollController scrollController = ScrollController();
   @override
   void initState() {
-    scrollController.addListener(
-          () {
-        if (scrollController.position.pixels ==
-            scrollController.position.maxScrollExtent) {
-          HomeController.to.getProductListRequest(loadMore: true);
-        }
-      },
-    );
     super.initState();
+    // Load all pending products when entering search page
+    HomeController.to.getProductListRequest();
+    scrollController.addListener(() {
+      if (scrollController.position.pixels ==
+          scrollController.position.maxScrollExtent) {
+        HomeController.to.getProductListRequest(loadMore: true);
+      }
+    });
   }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -43,10 +44,10 @@ class _SearchPageState extends State<SearchPage> {
       },
       child: Scaffold(
         endDrawer: FilterDrawerWidget(),
-        body:  CustomRefreshIndicatorWidget(
-            onRefresh:() async => await HomeController.to.refreshSearchHome(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        body: CustomRefreshIndicatorWidget(
+          onRefresh: () async => await HomeController.to.refreshSearchHome(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
                 padding: padding12.copyWith(
@@ -66,7 +67,8 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                     Expanded(
                       child: CustomTextField(
-                        textEditingController: HomeController.to.searchController.value,
+                        textEditingController:
+                            HomeController.to.searchController.value,
                         onChanged: (p0) {
                           HomeController.to.getProductListRequest();
                         },
@@ -91,63 +93,25 @@ class _SearchPageState extends State<SearchPage> {
               ),
               Expanded(
                 child: SingleChildScrollView(
-
                   controller: scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: Padding(
                     padding: padding12.copyWith(top: 6),
-                    child:  Column(
-                        spacing: 8.h,
-                        children: [
-                         /* !HomeController.to.showProducts.value
-                              ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                spacing: 6.h,
-                                children: [
-                                  ViewAllRow(
-                                    title: AppStaticStrings.searchHistory.tr,
-                                    onPressed: () {},
-                                    buttonText: AppStaticStrings.clearAll.tr,
-                                  ),
-                                  Wrap(
-                                    spacing: 8.w,
-                                    runSpacing: 8.w,
-                                    // alignment: WrapAlignment.spaceBetween,
-                                    children: List.generate(7, (index) {
-                                      return ButtonTapWidget(
-                                        onTap: () {
-                                          HomeController.to.showProducts.value =
-                                              true;
-                                        },
-                                        child: GreenAccentContainerWidget(
-                                          radius: 4.r,
-                                          child: Padding(
-                                            padding: padding4,
-                                            child: CustomText(
-                                              text: "Women's",
-                                              style: poppinsRegular,
-                                              fontSize: 10.sp,
-                                              color: AppColors.kPrimaryColor,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }),
-                                  ),
-                                ],
-                              )
-                              : SizedBox.shrink(),
-                          HomeController.to.showProducts.value
-                              ? */Obx(() {
-                                return ProductGridWidget(
-                                  productList: HomeController.to.productList,
-                                  isLoading:
-                                      HomeController.to.isLoadingProduct.value,
-                                );
-                              })
-                             /* : SizedBox.shrink()*/,
-                        ],
-                      )
+                    child: Column(
+                      spacing: 8.h,
+                      children: [
+                        // History section removed; always show product grid.
+                        // Previously there was a conditional UI based on showProducts flag.
+                        // The ProductGridWidget below will display the products.
+                        Obx(() {
+                          return ProductGridWidget(
+                            productList: HomeController.to.productList,
+                            isLoading: HomeController.to.isLoadingProduct.value,
+                          );
+                        }),
+                        /* : SizedBox.shrink()*/
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -87,7 +87,9 @@ class HomeController extends GetxController {
         0,
         double.parse(productWithHigherPriceList.first.price ?? "1000"),
       );
-      maximumPrice.value =double.parse(productWithHigherPriceList.first.price ?? "1000");
+      maximumPrice.value = double.parse(
+        productWithHigherPriceList.first.price ?? "1000",
+      );
     } else {
       rangeValues.value = RangeValues(0, 1000);
     }
@@ -338,13 +340,17 @@ class HomeController extends GetxController {
   Future<void> getProductListForHomeRequest() async {
     try {
       isLoadingHomeProduct.value = true;
-      // ApiService().setAuthToken(Boxes.getUserData().get(tokenKey).toString());
+      ApiService().setAuthToken(Boxes.getUserData().get(tokenKey).toString());
 
       final response = await ApiService().request(
         endpoint: productGetAllEndPoint,
-        useAuth: false,
+        useAuth: true,
         method: 'GET',
-        queryParams: {'order': 'desc', 'sort': 'createdAt'},
+        queryParams: {
+          'status': 'PENDING',
+          'order': 'desc',
+          'sort': 'createdAt',
+        },
       );
       isLoadingHomeProduct.value = false;
       if (response['success'] == true) {
@@ -355,8 +361,11 @@ class HomeController extends GetxController {
                 .toList();
         final imageUrls =
             productListForHome
-                .map((cat) => "${ApiService().baseUrl}/${cat.img}")
-                .where((url) => url.isNotEmpty)
+                .map(
+                  (cat) =>
+                      "${ApiService().baseUrl}/${cat.img?.replaceAll('\\', '/')}",
+                )
+                .where((url) => url.trim().isNotEmpty)
                 .toList();
 
         preloadImagesFromUrls(imageUrls);
@@ -398,8 +407,9 @@ class HomeController extends GetxController {
       final response = await ApiService().request(
         endpoint: productGetAllEndPoint,
         method: 'GET',
-        useAuth: false,
+        useAuth: true,
         queryParams: {
+          'status': 'PENDING',
           'page': currentProductPage.value.toString(),
           'limit': itemsProductPerPage.value.toString(),
           'search': searchController.value.text,
@@ -455,8 +465,11 @@ class HomeController extends GetxController {
                 .toList();
         final imageUrls =
             newProducts
-                .map((cat) => "${ApiService().baseUrl}/${cat.img}")
-                .where((url) => url.isNotEmpty)
+                .map(
+                  (cat) =>
+                      "${ApiService().baseUrl}/${cat.img?.replaceAll('\\', '/')} ",
+                )
+                .where((url) => url.trim().isNotEmpty)
                 .toList();
 
         preloadImagesFromUrls(imageUrls);
